@@ -1,0 +1,17 @@
+
+* {
+  margin: 0px;
+  padding: 0px;
+}
+
+html {
+  scrollbar-width: none;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+}
+
+body {
+  background-color: #becedd;
+  font-family: sans-serif;
+}
