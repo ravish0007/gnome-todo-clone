@@ -363,6 +363,7 @@ function clearDoneTasks () {
   todos = todos.filter(x => !x.completed)
   syncLocalStorage()
   displayTodos()
+  toggleDoneState = false
   toggleDoneTasks()
 }
 
