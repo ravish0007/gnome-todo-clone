@@ -2,18 +2,9 @@ let todos = []
 
 const priorities = ['None', 'Low', 'Medium', 'High']
 
-const model = {
-  title: '',
-  completed: false,
-  priority: null,
-  dueDate: '',
-  id: null,
-  notes: ''
-}
-
 let toggleDoneState = false
 
-function makeTodo (task) {
+function makeTodo(task) {
   const newTask = document.createElement('li')
   newTask.setAttribute('id', task.id)
 
@@ -150,26 +141,28 @@ function makeTodo (task) {
   return newTask
 }
 
-function addTodo (event) {
-  const input = document.getElementById('new-todo')
-  const newTodo = Object.assign({}, model)
-  const list = document.getElementById('todo-list')
+function addTodo(event) {
+  if (event.keyCode !== 13 || !event.target.value) return
 
-  if (input.value && event.keyCode == 13) { // pressing Enter
-    newTodo.id = Date.now()
-    newTodo.title = input.value
-    input.value = ''
-    todos.push(newTodo)
-
-    const li = makeTodo(newTodo)
-    list.appendChild(li)
-
-    syncLocalStorage()
+  const newTodo = {
+    title: event.target.value,
+    completed: false,
+    priority: 0,
+    dueDate: '',
+    id: Date.now(),
+    notes: ''
   }
+
+  todos.push(newTodo)
+
+  const li = makeTodo(newTodo)
+  document.getElementById('todo-list').append(li)
+
+  syncLocalStorage()
   toggleClearButton()
 }
 
-function toggleTodo (event) {
+function toggleTodo(event) {
   const parent = event.target.parentElement.parentElement
 
   for (const todo of todos) {
@@ -191,7 +184,7 @@ function toggleTodo (event) {
   toggleDoneTasks()
 }
 
-function deleteTodo (event) {
+function deleteTodo(event) {
   const li = event.target.parentElement.parentElement.parentElement
 
   for (let i = 0; i < todos.length; i++) {
@@ -205,7 +198,7 @@ function deleteTodo (event) {
   toggleClearButton()
 }
 
-function displayTodos (todos_ = todos) {
+function displayTodos(todos_ = todos) {
   const todoList = document.getElementById('todo-list')
   todoList.innerHTML = ''
 
@@ -217,7 +210,7 @@ function displayTodos (todos_ = todos) {
   toggleClearButton()
 }
 
-function editTodo (event) {
+function editTodo(event) {
   const parent = event.target.parentElement.parentElement
 
   for (const task of todos) {
@@ -228,7 +221,7 @@ function editTodo (event) {
   }
 }
 
-function showMoreInfo (event) {
+function showMoreInfo(event) {
   let parent = event.target.parentElement.parentElement
 
   if (event.target !== event.currentTarget) {
@@ -247,7 +240,7 @@ function showMoreInfo (event) {
   }
 }
 
-function setDate (event) {
+function setDate(event) {
   const parent = event.target.parentElement.parentElement.parentElement
   const dateLabel = parent.querySelector('.due-date')
   for (const todo of todos) {
@@ -268,7 +261,7 @@ function setDate (event) {
   }
 }
 
-function setPriority (event) {
+function setPriority(event) {
   const parent = event.target.parentElement.parentElement.parentElement
 
   for (const todo of todos) {
@@ -293,7 +286,7 @@ function setPriority (event) {
   }
 }
 
-function getNotes (event) {
+function getNotes(event) {
   const parent = event.target.parentElement.parentElement.parentElement
 
   for (const todo of todos) {
@@ -304,12 +297,12 @@ function getNotes (event) {
   }
 }
 
-function syncLocalStorage (command) {
+function syncLocalStorage(command) {
   const todoStore = window.localStorage
 
   switch (command) {
     case 'clear':
-      todoStore.clear()
+      todoStore.removeItem('todos')
       todos = []
       break
     case 'init':
@@ -319,14 +312,14 @@ function syncLocalStorage (command) {
   }
 }
 
-function clearAllTasks (event) {
+function clearAllTasks(event) {
   syncLocalStorage('clear')
   const list = document.getElementById('todo-list')
   list.innerHTML = ''
   toggleClearButton()
 }
 
-function toggleClearButton () {
+function toggleClearButton() {
   const clearTasks = document.getElementById('clear')
 
   if (todos.length) {
@@ -336,7 +329,7 @@ function toggleClearButton () {
   }
 }
 
-function toggleDoneTasks () {
+function toggleDoneTasks() {
   const footer = document.querySelector('footer')
   const showTasksButton = document.querySelector('#toggle-done')
 
@@ -359,7 +352,7 @@ function toggleDoneTasks () {
   }
 }
 
-function clearDoneTasks () {
+function clearDoneTasks() {
   todos = todos.filter(x => !x.completed)
   syncLocalStorage()
   displayTodos()
@@ -367,7 +360,7 @@ function clearDoneTasks () {
   toggleDoneTasks()
 }
 
-function main () {
+function main() {
   syncLocalStorage('init')
   displayTodos()
   toggleDoneTasks()
