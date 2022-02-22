@@ -287,12 +287,13 @@ function setPriority(event) {
 }
 
 function getNotes(event) {
-  const parent = event.target.parentElement.parentElement.parentElement
+  const parent = event.path[3]
 
   for (const todo of todos) {
     if (todo.id === Number(parent.id)) {
       todo.notes = event.target.value
       syncLocalStorage()
+      break
     }
   }
 }
@@ -307,17 +308,18 @@ function syncLocalStorage(command) {
       break
 
     case 'init':
-      todos = todoStore.length ? JSON.parse(todoStore.getItem('todos')) : []
+      if (todoStore['todos']) {
+        JSON.parse(todoStore['todos']).map(x => todos.push(x))
+      }
       break
 
-    default: todoStore.setItem('todos', JSON.stringify(todos))
+    default: todoStore['todos'] = JSON.stringify(todos)
   }
 }
 
 function clearAllTasks(event) {
   syncLocalStorage('clear')
-  const list = document.getElementById('todo-list')
-  list.innerHTML = ''
+  document.getElementById('todo-list').innerHTML = ''
   toggleClearButton()
 }
 
