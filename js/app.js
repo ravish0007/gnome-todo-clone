@@ -1,4 +1,4 @@
-let todos = []
+const todos = []
 
 const priorities = ['None', 'Low', 'Medium', 'High']
 
@@ -303,11 +303,13 @@ function syncLocalStorage(command) {
   switch (command) {
     case 'clear':
       todoStore.removeItem('todos')
-      todos = []
+      todos.splice(0)
       break
+
     case 'init':
       todos = todoStore.length ? JSON.parse(todoStore.getItem('todos')) : []
       break
+
     default: todoStore.setItem('todos', JSON.stringify(todos))
   }
 }
