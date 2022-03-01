@@ -1,144 +1,98 @@
-const todos = []
-
+let todos = []
 const priorities = ['None', 'Low', 'Medium', 'High']
 
 let toggleDoneState = false
 
-function makeTodo(task) {
-  const newTask = document.createElement('li')
-  newTask.setAttribute('id', task.id)
+function primaryDiv(todo) {
+  let template =
+    `<div class="todo-container">
+        <div class="todo-item">
+            <input class="toggle" type="checkbox" {{checked}}>
+            <input class="todo-label" value="{{title}}"></input>
+        </div>
+        <div class="date-container">
+            <label class="duedate">{{dueDate}}</label>
+            <button class="expander">▾</button>
+        </div>
+     </div>`
 
-  const div = document.createElement('div')
-  div.setAttribute('class', 'todo-item')
+  let checkedState = todo.completed ? 'checked' : ''
 
-  const label = document.createElement('input')
-  label.setAttribute('class', 'todo-label')
-  label.addEventListener('blur', editTodo)
+  template = template.replace('{{checked}}', checkedState)
+  template = template.replace('{{title}}', todo.title)
+  template = template.replace('{{dueDate}}', todo.dueDate)
 
-  if (task.title) {
-    label.value = task.title
+  return template
+}
+
+function elongatedDiv(todo) {
+  let priorityOptions = ''
+
+  priorities.map((x, index) => {
+    priorityOptions += `<option value="${index}" ${todo.priority === index ? 'selected' : ''}>` +
+      x + '</option>'
+  })
+
+  let template =
+    `<div class="elongated-div hidden" >
+
+          <div class="notes-div">
+              <label class="notes-label">Notes</label>
+              <textarea class="notes">{{notes}}</textarea>
+          </div>
+
+          <div class="priority-div">
+              <div>
+                  <label class=duedate-label>Due Date</label>
+                  <input type="date" class="date-selector" value="{{dueDate}}"/>
+
+                  <label class="priority-label">Priority</label>
+                  <select class="priority-selector">
+                          ${priorityOptions}
+                  </select>
+              </div>
+              <button class="delete-button">Delete</button>
+          </div>
+    </div>`
+
+  template = template.replace('{{notes}}', todo.notes)
+  template = template.replace('{{dueDate}}', todo.duedate)
+
+  return template
+}
+
+function makeTodo(todo) {
+  const todoElement = document.createElement('li')
+  todoElement.setAttribute('id', todo.id)
+  todoElement.setAttribute('class', "todo-li")
+
+  todoElement.innerHTML = primaryDiv(todo) + elongatedDiv(todo)
+
+  // Adding strike class if checked
+  if (todo.completed) {
+    todoElement.querySelector('.toggle').setAttribute('checked', 'true')
+    todoElement.querySelector('.todo-label').classList.add('strike')
   }
 
-  if (task.priority) {
-    newTask.classList.add(priorities[task.priority].toLowerCase())
-  }
+  // Adding border based on priority
+  todoElement.classList.add(priorities[todo.priority].toLowerCase())
 
-  const marker = document.createElement('label')
-  marker.setAttribute('class', 'marker')
+  // adding event listners
+  const eventArray = [
+    ['.todo-label', 'blur', editTodo],
+    ['.toggle', 'click', toggleTodo],
+    ['.expander', 'click', showMoreInfo],
+    ['.notes', 'blur', setNotes],
+    ['.date-selector', 'change', setDate],
+    ['.priority-selector', 'change', setPriority],
+    ['.delete-button', 'click', deleteTodo]
+  ]
 
-  const checkbox = document.createElement('input')
-  checkbox.setAttribute('type', 'checkbox')
-  checkbox.setAttribute('class', 'toggle')
-  checkbox.addEventListener('click', toggleTodo)
+  eventArray.map(([element, eventType, eventHandler]) => {
+    todoElement.querySelector(element).addEventListener(eventType, eventHandler)
+  })
 
-  const dueDateLabel = document.createElement('label')
-  dueDateLabel.setAttribute('class', 'due-date')
-
-  const expanderbox = document.createElement('div')
-  expanderbox.setAttribute('class', 'expander-div')
-  expanderbox.addEventListener('click', showMoreInfo)
-
-  const downArrow = document.createElement('button')
-  downArrow.setAttribute('class', 'expander')
-  downArrow.innerText = '▾' // ◢
-
-  expanderbox.appendChild(downArrow)
-
-  div.appendChild(marker)
-  div.appendChild(checkbox)
-  div.appendChild(label)
-  div.appendChild(expanderbox)
-  div.appendChild(dueDateLabel)
-
-  const elongatedDiv = document.createElement('div')
-  elongatedDiv.setAttribute('class', 'elongated-div')
-  elongatedDiv.classList.add('hidden')
-
-  const notesDiv = document.createElement('div')
-  notesDiv.setAttribute('class', 'notes-div')
-
-  const noteslabel = document.createElement('label')
-  noteslabel.setAttribute('class', 'notes-label')
-  noteslabel.innerText = 'Notes'
-
-  const textarea = document.createElement('textarea')
-  textarea.setAttribute('class', 'notes')
-  textarea.addEventListener('blur', getNotes)
-
-  notesDiv.appendChild(noteslabel)
-  notesDiv.appendChild(textarea)
-
-  const priorityDiv = document.createElement('div')
-  priorityDiv.setAttribute('class', 'priority-div')
-
-  const dueDateTitle = document.createElement('label')
-  dueDateTitle.innerText = 'Due Date'
-  dueDateTitle.setAttribute('class', 'duedate-label')
-
-  const datepicker = document.createElement('input')
-  datepicker.setAttribute('type', 'date')
-  datepicker.setAttribute('class', 'date-selector')
-  datepicker.addEventListener('change', setDate)
-
-  if (task.dueDate) {
-    datepicker.setAttribute('value', task.dueDate)
-  }
-
-  const priorityLabel = document.createElement('label')
-  priorityLabel.setAttribute('class', 'priority-label')
-  priorityLabel.innerText = 'Priority'
-
-  const prioritySelector = document.createElement('select')
-  prioritySelector.setAttribute('class', 'priority-selector')
-  prioritySelector.addEventListener('change', setPriority)
-
-  for (let i = 0; i < priorities.length; i++) {
-    const opt = document.createElement('option')
-    opt.value = i
-    opt.innerHTML = priorities[i]
-
-    if (Number.isInteger(task.priority) && task.priority === i) {
-      opt.setAttribute('selected', true)
-    }
-    prioritySelector.appendChild(opt)
-  }
-
-  const deleteButton = document.createElement('button')
-  deleteButton.setAttribute('class', 'delete-button')
-  deleteButton.innerText = 'Delete'
-  deleteButton.addEventListener('click', deleteTodo)
-
-  if (task.dueDate) {
-    const timestamp = Date.parse(task.dueDate)
-    const date = new Date(timestamp)
-    dueDateLabel.innerText = (date.getDate() + '/' + (date.getMonth() + 1) + '/' + String(date.getFullYear()).slice(2))
-  }
-
-  priorityDiv.appendChild(dueDateTitle)
-  priorityDiv.appendChild(datepicker)
-  priorityDiv.appendChild(priorityLabel)
-  priorityDiv.appendChild(prioritySelector)
-  priorityDiv.appendChild(deleteButton)
-
-  elongatedDiv.appendChild(notesDiv)
-  elongatedDiv.appendChild(priorityDiv)
-
-  if (task.completed) {
-    checkbox.checked = true
-    label.classList.add('strike')
-  }
-
-  if (task.notes) {
-    textarea.innerText = task.notes
-  }
-
-  label.innerText = task.title
-  marker.innerText = '≡'
-
-  newTask.appendChild(div)
-  newTask.appendChild(elongatedDiv)
-
-  return newTask
+  return todoElement
 }
 
 function addTodo(event) {
@@ -156,62 +110,69 @@ function addTodo(event) {
   todos.push(newTodo)
 
   const li = makeTodo(newTodo)
-  document.getElementById('todo-list').append(li)
+  document.querySelector('.todo-list').append(li)
+
+  event.target.value = '' // reset input
 
   syncLocalStorage()
   toggleClearButton()
 }
 
+function getParent(event, index) {
+  const path = event.path || (event.composedPath && event.composedPath())
+  const parent = path[index]
+  return parent
+}
+
 function toggleTodo(event) {
-  const parent = event.target.parentElement.parentElement
+  const parent = getParent(event, 3)
 
   for (const todo of todos) {
-    if (todo.id === Number(parent.id)) {
-      todo.completed = !todo.completed
 
-      if (todo.completed) {
-        event.target.checked = true
-        event.target.nextSibling.classList.add('strike')
-      } else {
-        event.target.checked = false
-        event.target.nextElementSibling.classList.remove('strike')
-      }
-      syncLocalStorage()
-      break
+    if (todo.id !== Number(parent.id)) {
+      continue
     }
-  }
 
-  toggleDoneTasks()
+    todo.completed = !todo.completed
+
+    if (todo.completed) {
+      event.target.checked = true
+      // check this later 
+      event.target.nextElementSibling.classList.toggle('strike')
+    }
+
+    syncLocalStorage()
+    toggleDoneTasks()
+    break
+  }
 }
 
 function deleteTodo(event) {
-  const li = event.target.parentElement.parentElement.parentElement
+  const parent = getParent(event, 3)
 
   for (let i = 0; i < todos.length; i++) {
-    if (todos[i].id === Number(li.id)) {
+    if (todos[i].id === Number(parent.id)) {
       todos.splice(i, 1)
-      li.parentElement.removeChild(li)
+      parent.parentElement.removeChild(parent)
       syncLocalStorage()
+      toggleClearButton()
       break
     }
   }
-  toggleClearButton()
 }
 
 function displayTodos(todos_ = todos) {
-  const todoList = document.getElementById('todo-list')
+  const todoList = document.querySelector('.todo-list')
   todoList.innerHTML = ''
 
   for (const task of todos_) {
     const li = makeTodo(task)
     todoList.appendChild(li)
-  };
-
-  toggleClearButton()
+  }
 }
 
 function editTodo(event) {
-  const parent = event.target.parentElement.parentElement
+  const parent = getParent(event, 2)
 
   for (const task of todos) {
     if (task.id === Number(parent.id)) {
@@ -222,12 +183,7 @@ function editTodo(event) {
 }
 
 function showMoreInfo(event) {
-  let parent = event.target.parentElement.parentElement
-
-  if (event.target !== event.currentTarget) {
-    parent = parent.parentElement
-  }
-
+  const parent = getParent(event, 3)
   const elongatedDiv = parent.querySelector('.elongated-div')
   const expander = parent.querySelector('.expander')
 
@@ -241,20 +197,13 @@ function showMoreInfo(event) {
 }
 
 function setDate(event) {
-  const parent = event.target.parentElement.parentElement.parentElement
-  const dateLabel = parent.querySelector('.due-date')
+  const parent = getParent(event, 4)
+  const dateLabel = parent.querySelector('.duedate')
+
   for (const todo of todos) {
     if (todo.id === Number(parent.id)) {
       todo.dueDate = event.target.value
-
-      if (event.target.value) {
-        const timestamp = Date.parse(todo.dueDate)
-        const date = new Date(timestamp)
-        dateLabel.innerText = (date.getDate() + '/' + (date.getMonth() + 1) + '/' + String(date.getFullYear()).slice(2))
-      } else {
-        dateLabel.innerText = ''
-      }
-
+      dateLabel.innerText = todo.dueDate
       syncLocalStorage()
       break
     }
@@ -262,7 +211,7 @@ function setDate(event) {
 }
 
 function setPriority(event) {
-  const parent = event.target.parentElement.parentElement.parentElement
+  const parent = getParent(event, 4)
 
   for (const todo of todos) {
     if (todo.id === Number(parent.id)) {
@@ -270,7 +219,6 @@ function setPriority(event) {
 
       for (const priority of priorities) {
         const priorityClass = priority.toLowerCase()
-        // debugger;
 
         if (parent.classList.contains(priorityClass)) {
           parent.classList.remove(priorityClass)
@@ -286,8 +234,8 @@ function setPriority(event) {
   }
 }
 
-function getNotes(event) {
-  const parent = event.path[3]
+function setNotes(event) {
+  const parent = getParent(event, 3)
 
   for (const todo of todos) {
     if (todo.id === Number(parent.id)) {
@@ -299,33 +247,33 @@ function getNotes(event) {
 }
 
 function syncLocalStorage(command) {
-  const todoStore = window.localStorage
+  const todoStore = localStorage
 
   switch (command) {
-    case 'clear':
-      todoStore.removeItem('todos')
-      todos.splice(0)
-      break
-
     case 'init':
-      if (todoStore['todos']) {
-        JSON.parse(todoStore['todos']).map(x => todos.push(x))
+      if (todoStore.todos) {
+        todos = JSON.parse(todoStore.todos)
       }
       break
 
-    default: todoStore['todos'] = JSON.stringify(todos)
+    case 'clear':
+      todoStore.removeItem('todos')
+      todos = []
+      break
+
+
+    default: todoStore.todos = JSON.stringify(todos)
   }
 }
 
-function clearAllTasks(event) {
+function clearAllTasks() {
   syncLocalStorage('clear')
-  document.getElementById('todo-list').innerHTML = ''
-  toggleClearButton()
+  document.querySelector('.todo-list').innerHTML = ''
+  toggleFooter()
 }
 
 function toggleClearButton() {
   const clearTasks = document.getElementById('clear')
-
   if (todos.length) {
     clearTasks.style.visibility = 'visible'
   } else {
@@ -333,16 +281,19 @@ function toggleClearButton() {
   }
 }
 
-function toggleDoneTasks() {
+function toggleDoneTasks(event) {
   const footer = document.querySelector('footer')
   const showTasksButton = document.querySelector('#toggle-done')
 
   const tempTodos = todos.filter(todo => !todo.completed)
   const completedTasksCount = todos.length - tempTodos.length
 
+  if (event && event.target.id === "toggle-done") {
+    toggleDoneState = !toggleDoneState
+  }
+
   if (completedTasksCount > 0) {
     footer.style.visibility = 'visible'
-    toggleDoneState = !toggleDoneState
 
     if (toggleDoneState) {
       displayTodos(tempTodos)
@@ -352,22 +303,27 @@ function toggleDoneTasks() {
       showTasksButton.innerHTML = `Hide Done Tasks (${completedTasksCount})`
     }
   } else {
+    displayTodos()
     footer.style.visibility = 'hidden'
   }
+}
+
+function toggleFooter() {
+  toggleDoneTasks()
+  toggleClearButton()
 }
 
 function clearDoneTasks() {
   todos = todos.filter(x => !x.completed)
   syncLocalStorage()
-  displayTodos()
   toggleDoneState = false
-  toggleDoneTasks()
+  toggleFooter()
 }
 
 function main() {
   syncLocalStorage('init')
   displayTodos()
-  toggleDoneTasks()
+  toggleFooter()
 }
 
 const newTodo = document.getElementById('new-todo')
