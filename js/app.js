@@ -3,17 +3,17 @@ const priorities = ['None', 'Low', 'Medium', 'High']
 
 let toggleDoneState = false
 
-function primaryDiv(todo) {
+function primaryContent(todo) {
   let template =
-    `<div class="todo-container">
-        <div class="todo-item">
-            <input class="toggle" type="checkbox" {{checked}}>
-            <input class="todo-label" value="{{title}}"></input>
-        </div>
-        <div class="date-container">
-            <label class="duedate">{{dueDate}}</label>
-            <button class="expander">▾</button>
-        </div>
+    `<div class="list-item__primary-content">
+         <span class="list-item__title">
+             <input class="list-item__checkbox" type="checkbox" {{checked}}>
+             <input class="list-item__input" value="{{title}}"></input>
+         </span>
+         <span>
+             <span class="list-item__due-date">{{dueDate}}</span>
+             <button class="list-item__expander">▾</button>
+         </span>
      </div>`
 
   let checkedState = todo.completed ? 'checked' : ''
@@ -25,7 +25,7 @@ function primaryDiv(todo) {
   return template
 }
 
-function elongatedDiv(todo) {
+function secondaryContent(todo) {
   let priorityOptions = ''
 
   priorities.map((x, index) => {
@@ -34,29 +34,29 @@ function elongatedDiv(todo) {
   })
 
   let template =
-    `<div class="elongated-div hidden" >
+    `<div class="list-item__secondary-content list-item--hide" >
 
-          <div class="notes-div">
-              <label class="notes-label">Notes</label>
-              <textarea class="notes">{{notes}}</textarea>
-          </div>
+         <div class="list-item__notes-content">
+             <p class="list-item__label">Notes</p>
+             <textarea class="list-item__textarea">{{notes}}</textarea>
+         </div>
 
-          <div class="priority-div">
-              <div>
-                  <label class=duedate-label>Due Date</label>
-                  <input type="date" class="date-selector" value="{{dueDate}}"/>
+         <div class="list-item__priority-content">
+             <div>
+                 <p class=list-item__label>Due Date</p>
+                 <input type="date" class="list-item__selector" value="{{dueDate}}"/>
 
-                  <label class="priority-label">Priority</label>
-                  <select class="priority-selector">
-                          ${priorityOptions}
-                  </select>
-              </div>
-              <button class="delete-button">Delete</button>
-          </div>
+                 <p class="list-item__label">Priority</p>
+                 <select class="list-item__selector">
+                      ${priorityOptions}
+                 </select>
+             </div>
+             <button class="list-item__button list-item__button--danger">Delete</button>
+         </div>
     </div>`
 
   template = template.replace('{{notes}}', todo.notes)
-  template = template.replace('{{dueDate}}', todo.duedate)
+  template = template.replace('{{dueDate}}', todo.dueDate)
 
   return template
 }
@@ -64,28 +64,28 @@ function elongatedDiv(todo) {
 function makeTodo(todo) {
   const todoElement = document.createElement('li')
   todoElement.setAttribute('id', todo.id)
-  todoElement.setAttribute('class', "todo-li")
+  todoElement.setAttribute('class', "list-item")
 
-  todoElement.innerHTML = primaryDiv(todo) + elongatedDiv(todo)
+  todoElement.innerHTML = primaryContent(todo) + secondaryContent(todo)
 
   // Adding strike class if checked
   if (todo.completed) {
-    todoElement.querySelector('.toggle').setAttribute('checked', 'true')
-    todoElement.querySelector('.todo-label').classList.add('strike')
+    todoElement.querySelector('.list-item__checkbox').setAttribute('checked', 'true')
+    todoElement.querySelector('.list-item__input').classList.add('list-item__input--strike')
   }
 
   // Adding border based on priority
-  todoElement.classList.add(priorities[todo.priority].toLowerCase())
+  todoElement.classList.add(`list-item--priority-${priorities[todo.priority].toLowerCase()}`)
 
   // adding event listners
   const eventArray = [
-    ['.todo-label', 'blur', editTodo],
-    ['.toggle', 'click', toggleTodo],
-    ['.expander', 'click', showMoreInfo],
-    ['.notes', 'blur', setNotes],
-    ['.date-selector', 'change', setDate],
-    ['.priority-selector', 'change', setPriority],
-    ['.delete-button', 'click', deleteTodo]
+    ['.list-item__checkbox', 'click', toggleTodo],
+    ['.list-item__input', 'blur', editTodo],
+    ['.list-item__expander', 'click', showMoreInfo],
+    ['.list-item__textarea', 'blur', setNotes],
+    ['input[type="date"]', 'change', setDate],
+    ['select', 'change', setPriority],
+    ['.list-item__button', 'click', deleteTodo]
   ]
 
   eventArray.map(([element, eventType, eventHandler]) => {
@@ -110,7 +110,7 @@ function addTodo(event) {
   todos.push(newTodo)
 
   const li = makeTodo(newTodo)
-  document.querySelector('.todo-list').append(li)
+  document.querySelector('.list').append(li)
 
   event.target.value = '' // reset input
 
@@ -125,125 +125,86 @@ function getParent(event, index) {
 }
 
 function toggleTodo(event) {
+
   const parent = getParent(event, 3)
+  let [todo] = todos.filter(x => (x.id === Number(parent.id)))
 
-  for (const todo of todos) {
+  todo.completed = !todo.completed
 
-    if (todo.id !== Number(parent.id)) {
-      continue
-    }
+  event.target.checked = !event.target.checked
+  event.target.nextElementSibling.classList.toggle('list-item__input--strike')
 
-    todo.completed = !todo.completed
-
-    if (todo.completed) {
-      event.target.checked = true
-      // check this later 
-      event.target.nextElementSibling.classList.toggle('strike')
-    }
-
-    syncLocalStorage()
-    toggleDoneTasks()
-    break
-  }
+  syncLocalStorage()
+  toggleDoneTasks()
 }
 
 function deleteTodo(event) {
   const parent = getParent(event, 3)
+  todos = todos.filter(x => (x.id !== Number(parent.id)))
 
-  for (let i = 0; i < todos.length; i++) {
-    if (todos[i].id === Number(parent.id)) {
-      todos.splice(i, 1)
-      parent.parentElement.removeChild(parent)
-      syncLocalStorage()
-      toggleClearButton()
-      break
-    }
-  }
+  parent.parentElement.removeChild(parent)
+
+  syncLocalStorage()
+  toggleClearButton()
 }
 
 function displayTodos(todos_ = todos) {
-  const todoList = document.querySelector('.todo-list')
+  const todoList = document.querySelector('.list')
   todoList.innerHTML = ''
-
-  for (const task of todos_) {
-    const li = makeTodo(task)
-    todoList.appendChild(li)
-  }
+  todos_.map(todo => todoList.appendChild(makeTodo(todo)))
 }
 
 function editTodo(event) {
-  const parent = getParent(event, 2)
+  const parent = getParent(event, 3)
+  let [todo] = todos.filter(x => (x.id === Number(parent.id)))
 
-  for (const task of todos) {
-    if (task.id === Number(parent.id)) {
-      task.title = event.target.value
-      syncLocalStorage()
-    }
-  }
+  todo.title = event.target.value
+  syncLocalStorage()
 }
 
 function showMoreInfo(event) {
   const parent = getParent(event, 3)
-  const elongatedDiv = parent.querySelector('.elongated-div')
-  const expander = parent.querySelector('.expander')
+  const secondaryContent = parent.querySelector('.list-item__secondary-content')
+  const expander = parent.querySelector('.list-item__expander')
 
-  if (elongatedDiv.classList.contains('hidden')) {
-    elongatedDiv.classList.remove('hidden')
-    expander.innerText = '▴'
-  } else {
-    elongatedDiv.classList.add('hidden')
-    expander.innerText = '▾'
-  }
+  secondaryContent.classList.toggle('list-item--hide')
+  expander.classList.toggle('list-item__expander--expand')
 }
 
 function setDate(event) {
   const parent = getParent(event, 4)
-  const dateLabel = parent.querySelector('.duedate')
+  const dateLabel = parent.querySelector('.list-item__due-date')
+  let [todo] = todos.filter(x => (x.id === Number(parent.id)))
 
-  for (const todo of todos) {
-    if (todo.id === Number(parent.id)) {
-      todo.dueDate = event.target.value
-      dateLabel.innerText = todo.dueDate
-      syncLocalStorage()
-      break
-    }
-  }
+  todo.dueDate = event.target.value
+  dateLabel.innerText = todo.dueDate
+
+  syncLocalStorage()
 }
 
 function setPriority(event) {
   const parent = getParent(event, 4)
+  let [todo] = todos.filter(x => (x.id === Number(parent.id)))
 
-  for (const todo of todos) {
-    if (todo.id === Number(parent.id)) {
-      todo.priority = Number(event.target.value)
+  todo.priority = Number(event.target.value)
 
-      for (const priority of priorities) {
-        const priorityClass = priority.toLowerCase()
+  for (const priority of priorities) {
+    const priorityClass = 'list-item--priority-' + priority.toLowerCase()
 
-        if (parent.classList.contains(priorityClass)) {
-          parent.classList.remove(priorityClass)
-          break
-        }
-      }
-
-      parent.classList.add(priorities[todo.priority].toLowerCase())
-
-      syncLocalStorage()
-      break
-    }
+    if (parent.classList.contains(priorityClass))
+      parent.classList.remove(priorityClass)
   }
+
+  parent.classList.add(`list-item--priority-${priorities[todo.priority].toLowerCase()}`)
+  syncLocalStorage()
 }
 
 function setNotes(event) {
   const parent = getParent(event, 3)
+  let [todo] = todos.filter(x => (x.id === Number(parent.id)))
 
-  for (const todo of todos) {
-    if (todo.id === Number(parent.id)) {
-      todo.notes = event.target.value
-      syncLocalStorage()
-      break
-    }
-  }
+  todo.notes = event.target.value
+  syncLocalStorage()
 }
 
 function syncLocalStorage(command) {
@@ -261,50 +222,45 @@ function syncLocalStorage(command) {
       todos = []
       break
 
-
     default: todoStore.todos = JSON.stringify(todos)
   }
 }
 
 function clearAllTasks() {
   syncLocalStorage('clear')
-  document.querySelector('.todo-list').innerHTML = ''
+  document.querySelector('.list').innerHTML = ''
   toggleFooter()
 }
 
 function toggleClearButton() {
-  const clearTasks = document.getElementById('clear')
-  if (todos.length) {
-    clearTasks.style.visibility = 'visible'
-  } else {
-    clearTasks.style.visibility = 'hidden'
-  }
+  const clearAllTasksButton = document.querySelector('.actionbar__clear-all')
+  clearAllTasksButton.style.visibility = todos.length ? 'visible' : 'hidden'
 }
 
 function toggleDoneTasks(event) {
-  const footer = document.querySelector('footer')
-  const showTasksButton = document.querySelector('#toggle-done')
+  const footer = document.querySelector('.actionbar')
+  const showTasksButton = document.querySelector('.actionbar__show-toggle')
 
   const tempTodos = todos.filter(todo => !todo.completed)
   const completedTasksCount = todos.length - tempTodos.length
 
-  if (event && event.target.id === "toggle-done") {
-    toggleDoneState = !toggleDoneState
-  }
-
   if (completedTasksCount > 0) {
     footer.style.visibility = 'visible'
-
-    if (toggleDoneState) {
-      displayTodos(tempTodos)
-      showTasksButton.innerHTML = `Show Done Tasks (${completedTasksCount})`
-    } else {
-      displayTodos(todos)
-      showTasksButton.innerHTML = `Hide Done Tasks (${completedTasksCount})`
-    }
   } else {
     displayTodos()
     footer.style.visibility = 'hidden'
+  }
+
+  if (event) {
+    toggleDoneState = !toggleDoneState
+  }
+
+  if (toggleDoneState) {
+    displayTodos(tempTodos)
+    showTasksButton.innerHTML = `Show Done Tasks (${completedTasksCount})`
+  } else {
+    displayTodos(todos)
+    showTasksButton.innerHTML = `Hide Done Tasks (${completedTasksCount})`
   }
 }
 
@@ -315,8 +271,9 @@ function toggleFooter() {
 
 function clearDoneTasks() {
   todos = todos.filter(x => !x.completed)
-  syncLocalStorage()
   toggleDoneState = false
+
+  syncLocalStorage()
   toggleFooter()
 }
 
@@ -326,16 +283,16 @@ function main() {
   toggleFooter()
 }
 
-const newTodo = document.getElementById('new-todo')
-newTodo.addEventListener('keypress', addTodo)
+const todoInput = document.querySelector('.input-container__input')
+todoInput.addEventListener('keypress', addTodo)
 
-const clearTasksButton = document.getElementById('clear')
-clearTasksButton.addEventListener('click', clearAllTasks)
+const clearAllButton = document.querySelector('.actionbar__clear-all')
+clearAllButton.addEventListener('click', clearAllTasks)
 
-const clearDoneButton = document.getElementById('clear-done')
+const clearDoneButton = document.querySelector('.actionbar__clear-done')
 clearDoneButton.addEventListener('click', clearDoneTasks)
 
-const showTasksButton = document.getElementById('toggle-done')
-showTasksButton.addEventListener('click', toggleDoneTasks)
+const toggleTasksButton = document.querySelector('.actionbar__show-toggle')
+toggleTasksButton.addEventListener('click', toggleDoneTasks)
 
 main()
